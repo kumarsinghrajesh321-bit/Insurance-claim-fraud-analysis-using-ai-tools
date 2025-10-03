@@ -1,0 +1,181 @@
+IMPORTING OF DATA.
+
+from google.colab import files
+uploaded = files.upload()
+
+import pandas as pd
+
+employee_df = pd.read_csv("employee_data.csv")
+insurance_df = pd.read_csv("insurance_data.csv")
+vendor_df = pd.read_csv("vendor_data.csv")
+
+merged_df = insurance_df.merge(employee_df, on="AGENT_ID", how="left")
+
+merged_df = merged_df.merge(vendor_df, on="VENDOR_ID", how="left")
+
+print(merged_df.head())
+print(merged_df.info())
+
+merged_df.to_csv("insurance_fraud_merged.csv", index=False)
+print("Merged dataset saved as 'insurance_fraud_merged.csv'")
+
+
+UNDERSTANDING THE DATA , WE NEED TO REMOVE SOME COLUMNS FOR THE EXACT RESULTS.
+
+from google.colab import files
+uploaded = files.upload()
+
+import pandas as pd
+
+df = pd.read_csv("Loan_default.csv")
+df.head(10)
+
+columns_to_keep = [
+    'AGE', 'MARITAL_STATUS', 'EMPLOYMENT_STATUS', 'NO_OF_FAMILY_MEMBERS',
+    'INSURANCE_TYPE', 'PREMIUM_AMOUNT', 'CLAIM_AMOUNT', 'CLAIM_STATUS',
+    'INCIDENT_SEVERITY', 'ANY_INJURY', 'POLICE_REPORT_AVAILABLE',
+    'AGENT_ID', 'AGENT_NAME', 'VENDOR_ID', 'VENDOR_NAME'
+]
+
+df = df[columns_to_keep]
+print(df.head())
+
+CHECKING FOR MISSING VALUES.
+
+df['VENDOR_ID'] = df['VENDOR_ID'].fillna('Unknown')
+df['VENDOR_NAME'] = df['VENDOR_NAME'].fillna('Unknown')
+
+
+print(df.isnull().sum())
+
+CONVERTING COLUMNS TO NUMERICS.
+
+from sklearn.preprocessing import LabelEncoder
+
+categorical_cols = [
+    'MARITAL_STATUS', 'EMPLOYMENT_STATUS', 'INSURANCE_TYPE',
+    'CLAIM_STATUS', 'INCIDENT_SEVERITY', 'AGENT_ID', 'AGENT_NAME',
+    'VENDOR_ID', 'VENDOR_NAME']
+le = LabelEncoder()
+for col in categorical_cols:
+    df[col] = le.fit_transform(df[col])
+
+print(df.head())
+
+SPLITING THE DATA INTO FEATURES AND TARGETS.
+
+X = df.drop('CLAIM_STATUS', axis=1) 
+y = df['CLAIM_STATUS']               
+
+print(X.shape, y.shape)
+
+SPLITING THE DATA INTO TRAIN AND TEST SETS.
+
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+print("Training set:", X_train.shape)
+print("Testing set:", X_test.shape)
+
+
+TRAINING A MODEL.
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from imblearn.over_sampling import SMOTE
+
+sm = SMOTE(random_state=42)
+X_train_res, y_train_res = sm.fit_resample(X_train, y_train)
+
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+
+rf.fit(X_train_res, y_train_res)
+
+y_pred = rf.predict(X_test)
+
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+print("Classification Report:\n", classification_report(y_test, y_pred))
+
+FINDING IMPORTANT RISK FACTOR FOR FRAUD.
+
+import matplotlib.pyplot as plt
+
+# Get feature importances
+importances = rf.feature_importances_
+features = X.columns
+
+# Plot
+plt.figure(figsize=(12,6))
+plt.barh(features, importances)
+plt.xlabel("Feature Importance")
+plt.title("Important Risk Factors for Fraud")
+plt.show()
+
+
+CLAIMS THAT ARE SUSPICIOUS.
+
+df['Fraud_Predicted'] = rf.predict(X)
+
+# Show suspicious claims
+suspicious_claims = df[df['Fraud_Predicted'] == 1]
+print(suspicious_claims.head())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
